@@ -122,5 +122,7 @@ npm run dev
 
 <h2>⭐ Support</h2>
 
+
 <p>
-If yo
+If you like this project, give it a ⭐ on GitHub!
+</p>
