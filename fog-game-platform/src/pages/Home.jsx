@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, memo } from "react";
 import GameCard from "../components/GameCard";
 import VideoPlayer from "../components/VideoPlayer";
 import { useNavigate } from "react-router-dom";
@@ -21,16 +21,31 @@ const games = [
   { id: 4, title: "Shooter", image: shooter, video: video1 },
 ];
 
+// 🔥 prevent unnecessary re-renders
+const MemoGameCard = memo(GameCard);
+
 function Home() {
   const [selectedGame, setSelectedGame] = useState(null);
   const [index, setIndex] = useState(0);
-  const [dragX, setDragX] = useState(0);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  const dragRef = useRef(0);
+  const frame = useRef(null);
+  const containerRef = useRef(null);
 
   const startX = useRef(0);
   const isDragging = useRef(false);
-  const hasDragged = useRef(false);
 
   const navigate = useNavigate();
+
+  //  responsive detect
+  useEffect(() => {
+    const resize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", resize);
+    return () => window.removeEventListener("resize", resize);
+  }, []);
+
+  const threshold = isMobile ? 70 : 180;
 
   const next = () => {
     setIndex((prev) => (prev + 1) % games.length);
@@ -42,73 +57,48 @@ function Home() {
     );
   };
 
-  // 🖱 START
-  const handleMouseDown = (e) => {
+  //  ULTRA SMOOTH TRANSFORM
+  const updatePosition = (value) => {
+    if (!containerRef.current) return;
+
+    containerRef.current.style.transform =
+      `translate3d(${value * 0.4}px, 0, 0)`;
+  };
+
+  const animate = () => {
+    updatePosition(dragRef.current);
+    frame.current = requestAnimationFrame(animate);
+  };
+
+  useEffect(() => {
+    frame.current = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frame.current);
+  }, []);
+
+  //  START
+  const start = (x) => {
     isDragging.current = true;
-    hasDragged.current = false;
-    startX.current = e.clientX;
+    startX.current = x;
   };
 
-  // 🖱 MOVE
-  const handleMouseMove = (e) => {
+  // MOVE
+  const move = (x) => {
+    if (!isDragging.current) return;
+    dragRef.current = x - startX.current;
+  };
+
+  // END
+  const end = () => {
     if (!isDragging.current) return;
 
-    const diff = e.clientX - startX.current;
+    if (dragRef.current > threshold) prev();
+    else if (dragRef.current < -threshold) next();
 
-    if (Math.abs(diff) > 5) {
-      hasDragged.current = true;
-    }
-
-    setDragX(diff);
-  };
-
-  // 🖱 END
-  const handleMouseUp = () => {
-    if (!isDragging.current) return;
-
-    if (hasDragged.current) {
-      if (dragX > 300) next();
-      else if (dragX < -300) prev();
-    }
-
-    setDragX(0);
+    dragRef.current = 0;
     isDragging.current = false;
-    hasDragged.current = false;
   };
 
-  const handleMouseLeave = () => {
-    isDragging.current = false;
-    setDragX(0);
-    hasDragged.current = false;
-  };
-
-  // 📱 TOUCH
-  const handleTouchStart = (e) => {
-    startX.current = e.touches[0].clientX;
-    hasDragged.current = false;
-  };
-
-  const handleTouchMove = (e) => {
-    const diff = e.touches[0].clientX - startX.current;
-
-    if (Math.abs(diff) > 5) {
-      hasDragged.current = true;
-    }
-
-    setDragX(diff);
-  };
-
-  const handleTouchEnd = () => {
-    if (hasDragged.current) {
-      if (dragX > 300) next();
-      else if (dragX < -300) prev();
-    }
-
-    setDragX(0);
-    hasDragged.current = false;
-  };
-
-  // 🎬 VIDEO SCREEN
+  //  VIDEO
   if (selectedGame) {
     return (
       <VideoPlayer
@@ -120,85 +110,79 @@ function Home() {
 
   return (
     <div
-      className="relative min-h-screen flex flex-col items-center justify-center text-white overflow-hidden select-none cursor-grab active:cursor-grabbing"
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseLeave}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
+      className="relative min-h-screen flex flex-col items-center justify-center text-white overflow-hidden select-none"
+      onMouseDown={(e) => start(e.clientX)}
+      onMouseMove={(e) => move(e.clientX)}
+      onMouseUp={end}
+      onMouseLeave={end}
+      onTouchStart={(e) => start(e.touches[0].clientX)}
+      onTouchMove={(e) => move(e.touches[0].clientX)}
+      onTouchEnd={end}
     >
       {/* Background */}
       <div
-        className="absolute inset-0 bg-cover bg-center blur-2xl scale-110"
+        className="absolute inset-0 bg-cover bg-center blur-2xl scale-110 will-change-transform"
         style={{ backgroundImage: `url(${games[index].image})` }}
       />
       <div className="absolute inset-0 bg-black/70" />
 
       {/* CONTENT */}
-      <div className="relative z-10 flex flex-col items-center">
+      <div className="relative z-10 flex flex-col items-center w-full px-4">
 
-        {/* DRAG CARDS */}
+        {/*  SUPER SMOOTH CAROUSEL */}
         <div
-          className="flex items-center gap-6 transition-transform duration-200"
-          style={{ transform: `translateX(${dragX * 0.50}px)` }}
+          ref={containerRef}
+          className="flex items-center justify-center gap-4 md:gap-6 will-change-transform"
         >
 
           {/* LEFT */}
-          <div className="scale-75 opacity-40">
-            <GameCard
+          <div className="scale-75 opacity-40 hidden sm:block">
+            <MemoGameCard
               game={games[(index - 1 + games.length) % games.length]}
-              onClick={(game) => {
-                if (!hasDragged.current) setSelectedGame(game);
-              }}
+              onClick={(g) => setSelectedGame(g)}
             />
           </div>
 
           {/* CENTER */}
-          <div className="scale-100">
-            <GameCard
+          <div className="scale-100 w-[220px] sm:w-[260px] md:w-[300px]">
+            <MemoGameCard
               game={games[index]}
-              onClick={(game) => {
-                if (!hasDragged.current) setSelectedGame(game);
-              }}
+              onClick={(g) => setSelectedGame(g)}
             />
           </div>
 
           {/* RIGHT */}
-          <div className="scale-75 opacity-40">
-            <GameCard
+          <div className="scale-75 opacity-40 hidden sm:block">
+            <MemoGameCard
               game={games[(index + 1) % games.length]}
-              onClick={(game) => {
-                if (!hasDragged.current) setSelectedGame(game);
-              }}
+              onClick={(g) => setSelectedGame(g)}
             />
           </div>
 
         </div>
 
         {/* BUTTONS */}
-        <div className="flex justify-between w-[300px] mt-6">
+        <div className="flex justify-between w-full max-w-[250px] mt-6">
           <button
             onClick={next}
-            className="bg-white/20 w-12 h-12 rounded-full"
+            className="bg-white/20 w-10 h-10 sm:w-12 sm:h-12 rounded-full"
           >
             ⬅
           </button>
 
           <button
             onClick={prev}
-            className="bg-white/20 w-12 h-12 rounded-full"
+            className="bg-white/20 w-10 h-10 sm:w-12 sm:h-12 rounded-full"
           >
             ➡
           </button>
         </div>
 
         {/* START */}
-        <button className="mt-6 px-10 py-3 bg-blue-500 rounded-xl"
+        <button
+          className="mt-6 px-6 sm:px-10 py-3 bg-blue-500 rounded-xl text-sm sm:text-lg"
           onClick={() => navigate("/game")}
         >
-
           START GAME
         </button>
 

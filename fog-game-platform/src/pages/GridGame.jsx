@@ -11,7 +11,7 @@ function GridGame() {
   const [status, setStatus] = useState("playing");
   const [blinkIndex, setBlinkIndex] = useState(null);
 
-  //  GRID GENERATOR
+  // 🎯 GRID GENERATOR
   const generateGrid = (patternType = pattern) => {
     let newGrid = [];
 
@@ -23,7 +23,6 @@ function GridGame() {
         else if (rand < 0.35) newGrid.push("red");
         else newGrid.push("green");
       } else {
-        // Pattern 2 harder 
         if (rand < 0.3) newGrid.push("blue");
         else if (rand < 0.6) newGrid.push("red");
         else newGrid.push("green");
@@ -33,7 +32,6 @@ function GridGame() {
     setGrid(newGrid);
   };
 
-  // INIT
   useEffect(() => {
     generateGrid(1);
   }, []);
@@ -54,26 +52,21 @@ function GridGame() {
     return () => clearTimeout(timer);
   }, [time, status]);
 
-  //  CLICK TILE
+  // 🎮 CLICK TILE
   const handleClick = (index) => {
     if (status !== "playing") return;
 
     const tile = grid[index];
 
-    // BLUE → collect
     if (tile === "blue") {
       const newGrid = [...grid];
       newGrid[index] = "green";
       setGrid(newGrid);
     }
 
-    // RED → blink + lose life
     if (tile === "red") {
       setBlinkIndex(index);
-
-      setTimeout(() => {
-        setBlinkIndex(null);
-      }, 400);
+      setTimeout(() => setBlinkIndex(null), 300);
 
       setLives((prev) => {
         if (prev - 1 <= 0) {
@@ -84,12 +77,10 @@ function GridGame() {
       });
     }
 
-    // CHECK WIN
     const remainingBlue = grid.filter((t) => t === "blue").length;
 
     if (remainingBlue === 1) {
       if (pattern === 1) {
-        //  AUTO MOVE TO PATTERN 2
         setPattern(2);
         setTime(30);
         generateGrid(2);
@@ -99,16 +90,17 @@ function GridGame() {
     }
   };
 
-  //  COLOR
-  const getColor = (tile, index) => {
-    if (index === blinkIndex) return "bg-white"; // blink effect
+  // 🎨 TILE STYLE
+  const getStyle = (tile, index) => {
+    if (index === blinkIndex) return "bg-white";
 
-    if (tile === "blue") return "bg-blue-500";
-    if (tile === "red") return "bg-red-500";
-    return "bg-green-500";
+    if (tile === "blue")
+      return "bg-blue-500/80 shadow-[0_0_15px_rgba(59,130,246,0.8)]";
+    if (tile === "red")
+      return "bg-red-500/80 shadow-[0_0_15px_rgba(239,68,68,0.8)]";
+    return "bg-green-500/80 shadow-[0_0_15px_rgba(34,197,94,0.8)]";
   };
 
-  //  RESET
   const resetGame = () => {
     setLives(5);
     setTime(30);
@@ -117,75 +109,96 @@ function GridGame() {
     generateGrid(1);
   };
 
-  return (
-    <div className="min-h-screen bg-black text-white flex flex-col items-center p-6">
+ return (
+  <div className="h-screen w-screen flex items-center justify-center 
+                  bg-gradient-to-br from-black via-gray-900 to-black text-white overflow-hidden">
 
-      {/*  INPUTS */}
-      <div className="flex gap-4 mb-6">
+    {/* GLASS PANEL */}
+    <div className="bg-white/10 backdrop-blur-xl border border-white/20 
+                    rounded-2xl shadow-xl 
+                    w-full h-full max-h-screen 
+                    flex flex-col p-3 sm:p-5">
+
+      {/* TITLE */}
+      <h1 className="text-lg sm:text-xl font-bold text-center mb-2">
+        🎮 Grid Game
+      </h1>
+
+      {/* INPUTS */}
+      <div className="flex flex-wrap gap-2 justify-center mb-2">
         <input
           type="number"
-          min="10"
+          min="5"
           value={rows}
           onChange={(e) => setRows(+e.target.value)}
-          className="p-2 text-black"
-          placeholder="Rows"
+          className="bg-white/20 p-1 rounded text-white w-14 text-sm"
         />
         <input
           type="number"
-          min="10"
+          min="5"
           value={cols}
           onChange={(e) => setCols(+e.target.value)}
-          className="p-2 text-black"
-          placeholder="Cols"
+          className="bg-white/20 p-1 rounded text-white w-14 text-sm"
         />
         <button
           onClick={() => generateGrid()}
-          className="bg-blue-500 px-4 py-2 rounded"
+          className="bg-blue-500 px-2 py-1 rounded text-sm"
         >
           Generate
         </button>
       </div>
 
-      {/*  STATUS */}
-      <div className="flex gap-10 mb-4 text-lg">
-        <p>❤️ Lives: {lives}</p>
-        <p>⏱ Time: {time}s</p>
-        <p>🎯 Pattern: {pattern}</p>
+      {/* STATUS */}
+      <div className="flex justify-between px-2 text-xs sm:text-sm mb-2">
+        <p>❤️ {lives}</p>
+        <p>⏱ {time}s</p>
+        <p>🎯 {pattern}</p>
       </div>
 
-      {/*  GRID */}
+      {/* GRID (AUTO FIT HEIGHT 🔥) */}
+     {/* GRID */}
+<div className="flex-1 flex items-center justify-center">
+
+  <div
+    className="grid gap-1 sm:gap-2 
+               w-[85vmin] h-[85vmin] 
+               max-w-[500px] max-h-[500px]"
+    style={{
+      gridTemplateColumns: `repeat(${cols}, 1fr)`
+    }}
+  >
+    {grid.map((tile, index) => (
       <div
-        className="grid gap-2"
-        style={{
-          gridTemplateColumns: `repeat(${cols}, 40px)`
-        }}
-      >
-        {grid.map((tile, index) => (
-          <div
-            key={index}
-            onClick={() => handleClick(index)}
-            className={`w-10 h-10 cursor-pointer rounded transition-all duration-200 ${getColor(tile, index)}`}
-          />
-        ))}
-      </div>
+        key={index}
+        onClick={() => handleClick(index)}
+        className={`aspect-square rounded cursor-pointer 
+                    transition-all duration-150 
+                    hover:scale-105 ${getStyle(tile, index)}`}
+      />
+    ))}
+  </div>
 
-      {/*  RESULT */}
+</div>
+
+      {/* RESULT */}
       {status !== "playing" && (
-        <div className="mt-6 text-center">
-          <h2 className="text-3xl mb-4">
-            {status === "win" ? "🎉 YOU WIN!" : "❌ YOU LOSE!"}
+        <div className="text-center mt-2">
+          <h2 className="text-lg sm:text-xl mb-2">
+            {status === "win" ? "🎉 WIN" : "❌ LOSE"}
           </h2>
 
           <button
             onClick={resetGame}
-            className="bg-green-500 px-6 py-2 rounded"
+            className="bg-green-500 px-3 py-1 rounded text-sm"
           >
             Play Again
           </button>
         </div>
       )}
     </div>
-  );
+  </div>
+);
+
 }
 
 export default GridGame;
