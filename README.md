@@ -17,7 +17,6 @@
 
 <p>
 🌐 <b>Live URL:</b>https://earnest-kangaroo-9f4d90.netlify.app/ <br/>
-📂 <b>GitHub:</b>https://github.com/KaranKuma-r/fog-technologies
 </p>
 
 <hr/>
