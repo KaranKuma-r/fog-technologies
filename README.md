@@ -21,7 +21,7 @@
 
 <hr/>
 
-<h2>✨ Features</h2>
+<h2> Features</h2>
 
 <h3>🎯 Game Selection Interface</h3>
 <ul>
