@@ -23,7 +23,7 @@
 
 <h2> Features</h2>
 
-<h3>🎯 Game Selection Interface</h3>
+<h3> Game Selection Interface</h3>
 <ul>
   <li>🎮 Interactive game cards</li>
   <li>🖱 Mouse drag + 📱 touch swipe support</li>
