@@ -33,7 +33,7 @@
   <li>⚡ Smooth transitions & animations</li>
 </ul>
 
-<h3>🎯 Grid Game</h3>
+<h3> Grid Game</h3>
 <ul>
   <li>🔢 Dynamic grid (rows & columns)</li>
   <li>🎯 Pattern 1 & Pattern 2</li>
